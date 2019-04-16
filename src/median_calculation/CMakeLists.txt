@@ -31,6 +31,13 @@ if ( CFITS_LIBRARY AND CFITS_INCLUDE_DIR )
               LIBRARY DESTINATION lib
               ARCHIVE DESTINATION lib/static
               RUNTIME DESTINATION bin )
+      
+      add_executable(vector_check vector_check.cpp)
+      target_link_libraries(vector_check ${UMAPLIBDIR}/libumap.a ${CFITS_LIBRARIES})
+      install(TARGETS vector_check
+              LIBRARY DESTINATION lib
+              ARCHIVE DESTINATION lib/static
+              RUNTIME DESTINATION bin )
 
   else()
     message("Skipping median_calculation, OpenMP required")

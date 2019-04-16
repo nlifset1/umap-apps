@@ -183,14 +183,14 @@ std::tuple<std::vector<unsigned long>, std::vector<double>, std::vector<std::vec
 }
 
 template <typename iterator_type>
-std::vector<std::tuple<size_t, ssize_T, ssize_t, int, value_type>> vector_pos_info(iterator_type iterator_begin, iterator_type iterator_end) {
+std::vector<std::tuple<size_t, ssize_t, ssize_t, int, pixel_type>> vector_pos_info(iterator_type iterator_begin, iterator_type iterator_end) {
 	using value_type = typename iterator_type::value_type;
 
-	std::vector<std::tuple<size_t, ssize_T, ssize_t, int, value_type>> vector_info;
+	std::vector<std::tuple<size_t, ssize_t, ssize_t, int, pixel_type>> vector_info;
 
 	for (auto iterator(iterator_begin); iterator != iterator_end; ++iterator) {
 		std::tuple<pixel_type, int, ssize_t, ssize_t, size_t> vec_info = iterator.vector_pos_info();
-		const value_type value = std::get<0>(vec_info);
+		const pixel_type value = std::get<0>(vec_info);
 		int num_pixels = std::get<1>(vec_info);
 		ssize_t x_pos = std::get<2>(vec_info);
 		ssize_t y_pos = std::get<3>(vec_info);
@@ -207,7 +207,7 @@ std::vector<std::tuple<size_t, ssize_T, ssize_t, int, value_type>> vector_pos_in
 
 // Function to write results to a csv file in the form:
 // K position | X position | Y position | Number of pixels hit | SUM 
-void write_tocsv(std::vector<std::tuple<size_t, ssize_T, ssize_t, int, value_type>> &result) {
+void write_tocsv(std::vector<std::tuple<size_t, ssize_t, ssize_t, int, pixel_type>> &result) {
 	std::ofstream out("vector_check_output.csv");
 
 	out << "K_POS,X_POS,Y_POS,NUM_PIXELS,SUM\n";
