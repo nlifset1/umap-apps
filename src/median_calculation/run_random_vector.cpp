@@ -286,6 +286,8 @@ shoot_vector(const cube<pixel_type> &cube, const std::size_t num_random_vector) 
 // Function to write results to a csv file in the form:
 // ID | X_INTERCEPT | Y_INTERCEPT | X_SLOPE | Y_SLOPE | SNR | SUM | NUMBER OF FRAMES HIT
 void write_tocsv(std::vector<std::tuple<vector_xy, double, double, int>> &result) {
+	
+	double snr_cutoff = 0;
 	std::ofstream out("vector_output.csv");
 
 	out << "ID,X_INTERCEPT,Y_INTERCEPT,X_SLOPE,Y_SLOPE,SNR,SUM,NUMBER_OF_FRAMES_HIT\n";
@@ -293,6 +295,10 @@ void write_tocsv(std::vector<std::tuple<vector_xy, double, double, int>> &result
 	long long id = 1;
 	for (auto& row : result) {
 		
+		if (std::get<1>(row) <= snr_cutoff) {
+			++id;
+			continue;
+		}
 		out << id << ',';
 		out << std::get<0>(row).x_intercept << ',';
 		out << std::get<0>(row).y_intercept << ',';
