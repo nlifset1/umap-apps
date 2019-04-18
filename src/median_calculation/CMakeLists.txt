@@ -39,6 +39,13 @@ if ( CFITS_LIBRARY AND CFITS_INCLUDE_DIR )
               ARCHIVE DESTINATION lib/static
               RUNTIME DESTINATION bin )
 
+      add_executable(run_catalog_vector run_catalog_vector.cpp)
+      target_link_libraries(run_catalog_vector ${UMAPLIBDIR}/libumap.a ${CFITS_LIBRARIES})
+      install(TARGETS run_catalog_vector
+              LIBRARY DESTINATION lib
+              ARCHIVE DESTINATION lib/static
+              RUNTIME DESTINATION bin )
+
   else()
     message("Skipping median_calculation, OpenMP required")
   endif()
