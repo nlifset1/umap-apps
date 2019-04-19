@@ -186,8 +186,8 @@ std::vector<double> pixel_to_equ(std::vector<double> xy_pos) {
 }
 
 std::vector<double> equ_to_pixel(std::vector<double> ra_dec) {
-	double delta_x = (xy_pos[0] - 139.489333678528)/(-0.00007325);
-	double delta_y = (xy_pos[1] - 15.7289075993474)/(0.00007325);
+	double delta_x = (ra_dec[0] - 139.489333678528)/(-0.00007325);
+	double delta_y = (ra_dec[1] - 15.7289075993474)/(0.00007325);
 	std::vector<double> xy_pos = { delta_x + 78000 , delta_y + 78000 };
 
 	return xy_pos;
@@ -284,7 +284,7 @@ std::vector<vector_xy> read_vector_catalog(const cube<pixel_type> &cube, const c
 
 		std::vector<double> radec = { ra[ii],dec[ii] };
 
-		std::vector<double> position = some_func(radec);
+		std::vector<double> position = equ_to_pixel(radec);
 
 		x_int = position[0] - x_slope * time[ii];
 		y_int = position[1] - y_slope * time[ii];
@@ -309,7 +309,7 @@ std::pair<double, std::vector<std::tuple<vector_xy, double, double, int>>> shoot
 
 		// Shoot random vectors using multiple threads
 
-		for (int ii = 0; ii < ((num_vec == 0) ? (nrows) : (num_vec)); ii++) {
+		for (int ii = 0; ii < ((num_vec == 0) ? (vector_catalog.size()) : (num_vec)); ii++) {
 			vector_xy current_vector = vector_catalog[ii];
 			cube_iterator_with_vector<pixel_type> begin(cube, current_vector, 0.0);
 			cube_iterator_with_vector<pixel_type> end(cube, current_vector);
