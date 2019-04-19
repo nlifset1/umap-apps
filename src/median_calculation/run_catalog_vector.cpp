@@ -233,24 +233,27 @@ std::vector<vector_xy> read_vector_catalog(const cube<pixel_type> &cube, const c
 
 	int status, anynull;
 	float floatnull = 0.;
-	const long nrows;
+	long nrows;
 
 	status = 0;
-
-	if (fits_open_table(&fptr, catalog_filename, READONLY, &status))
-		printerror(status);
-
+	
+	if (fits_open_table(&fptr, catalog_filename, READONLY, &status)) {
+		fits_report_error(stderr, status);
+		exit(status);
+	}
+	
 	fits_get_num_rows(fptr, &nrows, &status); //get number of rows to use as number of elements per column
-
-	std::vector<double> ra(nrows), dec(nrows), v_ra(nrows), v_dec(nrows), time(nrows);
-
-	fits_read_col(fptr, TFLOAT, 1 , 1, 1, nrows, &floatnull, &v_ra, &anynull, &status);
-	fits_read_col(fptr, TFLOAT, 2 , 1, 1, nrows, &floatnull, &v_dec, &anynull, &status);
-	fits_read_col(fptr, TFLOAT, 3 , 1, 1, nrows, &floatnull, &time, &anynull, &status);
-	fits_read_col(fptr, TFLOAT, 4 , 1, 1, nrows, &floatnull, &ra, &anynull, &status);
-	fits_read_col(fptr, TFLOAT, 5 , 1, 1, nrows, &floatnull, &dec, &anynull, &status);
-
-	for (ii = 0; ii < nrows; ii++) {
+	
+	//std::vector<double> dec(nrows), v_ra(nrows), v_dec(nrows), time(nrows);
+	double ra[100000], dec[100000], v_ra[100000], v_dec[100000], time[100000];
+	
+	fits_read_col(fptr, TDOUBLE, 1 , 1, 1, nrows, &floatnull, &v_ra, &anynull, &status);
+	fits_read_col(fptr, TDOUBLE, 2 , 1, 1, nrows, &floatnull, &v_dec, &anynull, &status);
+	fits_read_col(fptr, TDOUBLE, 3 , 1, 1, nrows, &floatnull, &time, &anynull, &status);
+	fits_read_col(fptr, TDOUBLE, 4 , 1, 1, nrows, &floatnull, &ra, &anynull, &status);
+	fits_read_col(fptr, TDOUBLE, 5 , 1, 1, nrows, &floatnull, &dec, &anynull, &status);
+	
+	for (int ii = 0; ii < nrows; ii++) {
 		//NEED FUNCTIONS HERE FOR CONVERSION
 
 		double x_slope, y_slope, x_int, y_int;
@@ -280,16 +283,13 @@ std::pair<double, std::vector<std::tuple<vector_xy, double, double, int>>> shoot
 
 	double total_execution_time = 0.0;
 
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-	{
+
+	
 
 		// Shoot random vectors using multiple threads
-#ifdef _OPENMP
-#pragma omp for
-#endif
-		for (auto& current_vector : vector_catalog) {
+
+		for (int ii = 0; ii < 3; ii++) {//auto& current_vector : vector_catalog) {
+			vector_xy current_vector = vector_catalog[ii];
 			cube_iterator_with_vector<pixel_type> begin(cube, current_vector, 0.0);
 			cube_iterator_with_vector<pixel_type> end(cube, current_vector);
 
@@ -299,7 +299,7 @@ std::pair<double, std::vector<std::tuple<vector_xy, double, double, int>>> shoot
 			result.push_back(std::make_tuple(current_vector, std::get<0>(v_info), std::get<1>(v_info), std::get<2>(v_info)));
 			total_execution_time += utility::elapsed_time_sec(start);
 		}
-	}
+	
 
 	return std::make_pair(total_execution_time, result);
 }
@@ -352,7 +352,7 @@ int main(int argc, char **argv) {
 
 
 	double pixel_scale = 0.27;
-
+	
 	const char *catalog_filename = std::getenv("VECTOR_CATALOG");
 	std::vector<vector_xy> vector_catalog = read_vector_catalog(cube, catalog_filename, pixel_scale);
 
@@ -361,11 +361,11 @@ int main(int argc, char **argv) {
 
 
 
-	std::cout << "#of vectors = " << vector_catalog.size()
-		<< "\nexecution time (sec) = " << result.first
-		<< "\nvectors/sec = " << static_cast<double>(vector_catalog.size()) / result.first << std::endl;
+	//std::cout << "#of vectors = " << vector_catalog.size()
+	//	<< "\nexecution time (sec) = " << result.first
+	//	<< "\nvectors/sec = " << static_cast<double>(vector_catalog.size()) / result.first << std::endl;
 
-	write_tocsv(result.second);
+	//write_tocsv(result.second);
 
 	utility::umap_fits_file::PerFits_free_cube(image_data);
 
