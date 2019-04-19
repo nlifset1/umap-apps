@@ -38,7 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 using namespace median;
 
 using pixel_type = float;
-constexpr size_t default_num_random_vector = 100000;
+constexpr size_t default_num_random_vector = 0;
 
 void map_fits(const std::string &filename,
 	size_t *size_x,
@@ -61,7 +61,14 @@ void map_fits(const std::string &filename,
 	}
 }
 
-
+std::size_t get_num_vectors() {
+	std::size_t num_random_vector = default_num_random_vector;
+	const char *buf = std::getenv("NUM_VECTORS");
+	if (buf != nullptr) {
+		num_random_vector = std::stoll(buf);
+	}
+	return num_random_vector;
+}
 
 std::vector<double> read_exposuretime(const size_t size_k) {
 	std::vector<double> exposuretime_list;
@@ -170,7 +177,21 @@ std::tuple<std::vector<unsigned long>, std::vector<double>, std::vector<std::vec
 }
 
 
+std::vector<double> pixel_to_equ(std::vector<double> xy_pos) {
+	double delta_x = (-0.00007325)*(xy_pos[0] - 78000);
+	double delta_y = (0.00007325)*(xy_pos[1] - 78000);
+	std::vector<double> radec = { delta_x + 139.489333678528 , delta_y + 15.7289075993474 };
 
+	return radec;
+}
+
+std::vector<double> equ_to_pixel(std::vector<double> ra_dec) {
+	double delta_x = (xy_pos[0] - 139.489333678528)/(-0.00007325);
+	double delta_y = (xy_pos[1] - 15.7289075993474)/(0.00007325);
+	std::vector<double> xy_pos = { delta_x + 78000 , delta_y + 78000 };
+
+	return xy_pos;
+}
 
 // Function to calculate relevant information about a given vector
 // Returns: <SNR, weighted sum, number of frames intersected>
@@ -261,9 +282,9 @@ std::vector<vector_xy> read_vector_catalog(const cube<pixel_type> &cube, const c
 		x_slope = -v_ra[ii] / pixel_scale;
 		y_slope = v_dec[ii] / pixel_scale;
 
-		//auto position = some_func(ra[ii], dec[ii]);
+		std::vector<double> radec = { ra[ii],dec[ii] };
 
-		std::vector<double> position = { 100,100 };
+		std::vector<double> position = some_func(radec);
 
 		x_int = position[0] - x_slope * time[ii];
 		y_int = position[1] - y_slope * time[ii];
@@ -277,7 +298,7 @@ std::vector<vector_xy> read_vector_catalog(const cube<pixel_type> &cube, const c
 	return result;
 }
 
-std::pair<double, std::vector<std::tuple<vector_xy, double, double, int>>> shoot_vector_catalog(const cube<pixel_type> &cube, const std::vector<vector_xy> vector_catalog) {
+std::pair<double, std::vector<std::tuple<vector_xy, double, double, int>>> shoot_vector_catalog(const cube<pixel_type> &cube, const std::vector<vector_xy> vector_catalog, const std::size_t num_vec) {
 	// Array to store results of the median calculation
 	std::vector<std::tuple<vector_xy, double, double, int>> result;
 
@@ -288,7 +309,7 @@ std::pair<double, std::vector<std::tuple<vector_xy, double, double, int>>> shoot
 
 		// Shoot random vectors using multiple threads
 
-		for (int ii = 0; ii < 3; ii++) {//auto& current_vector : vector_catalog) {
+		for (int ii = 0; ii < ((num_vec == 0) ? (nrows) : (num_vec)); ii++) {
 			vector_xy current_vector = vector_catalog[ii];
 			cube_iterator_with_vector<pixel_type> begin(cube, current_vector, 0.0);
 			cube_iterator_with_vector<pixel_type> end(cube, current_vector);
@@ -348,7 +369,7 @@ int main(int argc, char **argv) {
 	std::tuple<std::vector<unsigned long>, std::vector<double>, std::vector<std::vector<double>>, std::vector<double>> lists = read_list_csv(size_k);
 	cube<pixel_type> cube(size_x, size_y, size_k, image_data, std::get<0>(lists), read_exposuretime(size_k), std::get<1>(lists), std::get<2>(lists), std::get<3>(lists));
 
-
+	const std::size_t num_random_vector = get_num_vectors();
 
 
 	double pixel_scale = 0.27;
@@ -356,7 +377,7 @@ int main(int argc, char **argv) {
 	const char *catalog_filename = std::getenv("VECTOR_CATALOG");
 	std::vector<vector_xy> vector_catalog = read_vector_catalog(cube, catalog_filename, pixel_scale);
 
-	auto result = shoot_vector_catalog(cube, vector_catalog);
+	auto result = shoot_vector_catalog(cube, vector_catalog, num_random_vector);
 
 
 
